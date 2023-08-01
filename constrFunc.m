@@ -10,10 +10,10 @@ function [Y] = constrFunc(B,Foff,Fon,tauLR,Vc)
 %       Vc = Voltage drop over coil [V]
 %   OUTPUT:
 %        c = array of costs
-BminFe = 0; BmaxFe = 2; % Target 1.6 or less 
+BminFe = 0; BmaxFe = 2.2; % Target 1.6 or less 
 BminMR = 0; BmaxMR = 1; % Target 0.6 or less
 Foffmin = 0; Foffmax = 5;
-Fonmin = 50; Fonmax = 120;
+Fonmin = 40; Fonmax = 120;
 taumin = 0; taumax = 0.1;
 Vmin = 0; Vmax = 13;
 Vnom = 12;

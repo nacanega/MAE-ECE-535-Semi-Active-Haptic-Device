@@ -21,7 +21,7 @@ Vnom = 12; % Nominal Voltage
 [h,r,q,Ic] = denormalizeDesign(x,true);
 
 % Evaluate using MCA
-[B,Vc,Rc,Lc,lc] = evalMCA(h,r,q,Ic);
+[B,Vc,Rc,Lc,lc,mu,Phi,Nturns] = evalMCA(h,r,q,Ic);
 
 % Extract dVs
 h0 = h(:,1); h1 = h(:,2); h2 = h(:,3);
@@ -29,8 +29,8 @@ r0 = r(:,1); r1 = r(:,2); r2 = r(:,3);
 r3 = r(:,4); r4 = r(:,5); r5 = r(:,6); r6 = r(:,7);
 
 % Find Forces
-Fmin = MRforce(h2,r4,r5);
-Fmax = MRforce(h2,r4,r5,B(:,4));
+Fmin = MRforce(h0,h2,r2,r4,r5);
+Fmax = MRforce(h0,h2,r2,r4,r5,B(:,4));
 
 % Adds a series resistor to get 12V total potential difference if needed
 if Vc < Vnom
@@ -55,11 +55,11 @@ penaltyTerm = sum((K*lambda).^2);
 % Power
 Pc = Vc.*Ic;
 % Wasted Volume
-Vwaste = 2*pi*(r4-q/2) .* (r4-r2-q).*h0;
+Vwaste = 2*pi*(r4-q/2) .* (r4-r2).*h0;
 
 F(1) = massSpool + massTube + penaltyTerm;
 F(2) = Pc + penaltyTerm;
-F(3) = -Fmax + penaltyTerm;
+F(3) = Vwaste + penaltyTerm;
 
 if nargout > 1
     calcParams = [B,Fmin,Fmax,tauLR,Vc];
@@ -67,7 +67,7 @@ if nargout > 1
     varargout{1} = cMat;
     designVector = [h,r,q,Ic];
     varargout{2} = designVector;
-    varargout{3} = [Rfix,massSpool,massTube,Pc,Vwaste];
+    varargout{3} = [Rfix,massSpool,massTube,Pc,Vwaste,mu,Phi,Nturns];
 end
 
 end

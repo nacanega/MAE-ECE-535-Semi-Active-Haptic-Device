@@ -15,7 +15,7 @@ function [F,varargout] = objfunFEMM(x,varargin)
 %                 row 3 shows whether upper constraint is active
 %           - {2} designVector [h,r,q,Ic]
 %           - {3} Additonal terms [Rfix,Mass1,Mass2,Pc,Vwaste];
-K = 10;
+K = 20;
 Vnom = 12; % Nominal Voltage
 
 if nargin == 2 && varargin{1}
@@ -28,7 +28,7 @@ end
 [h,r,q,Ic] = denormalizeDesign(x,false);
 
 % Evaluate using FEMM
-[B,Vc,Rc,Lc,lc] = evalFEMM(h,r,q,Ic,hideFEMM);
+[B,Vc,Rc,Lc,lc,mu,Phi,Nturns] = evalFEMM(h,r,q,Ic,hideFEMM);
 
 % Convert lengths to meters
 h = h*1e-3; r = r*1e-3; q = q*1e-3;
@@ -39,8 +39,8 @@ r0 = r(:,1); r1 = r(:,2); r2 = r(:,3);
 r3 = r(:,4); r4 = r(:,5); r5 = r(:,6); r6 = r(:,7);
 
 % Find Forces
-Fmin = MRforce(h2,r4,r5);
-Fmax = MRforce(h2,r4,r5,B(:,4));
+Fmin = MRforce(h0,h2,r2,r4,r5);
+Fmax = MRforce(h0,h2,r2,r4,r5,B(:,4));
 
 % Adds a series resistor to get 12V total potential difference if needed
 if Vc < Vnom
@@ -65,7 +65,7 @@ penaltyTerm = sum((K*lambda).^2);
 % Power
 Pc = Vc.*Ic;
 % Wasted Volume
-Vwaste = 2*pi*(r4-q/2) .* (r4-r2-q).*h0;
+Vwaste = 2*pi*(r4-q/2) .* (r4-r2).*h0;
 
 F(1) = massSpool + massTube + penaltyTerm;
 F(2) = Pc + penaltyTerm;
@@ -77,7 +77,7 @@ if nargout > 1
     varargout{1} = cMat;
     designVector = [h,r,q,Ic];
     varargout{2} = designVector;
-    varargout{3} = [Rfix,massSpool,massTube,Pc,Vwaste];
+    varargout{3} = [Rfix,massSpool,massTube,Pc,Vwaste,mu,Phi,Nturns];
 end
 
 end

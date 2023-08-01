@@ -1,9 +1,9 @@
-function [coilPts, Nturns, lenWire, varargout] = calcCoil(h0,r2,q,varargin)
+function [coilPts, Nturns, lenWire, varargout] = calcCoil(h0,r1,q,varargin)
 %calcCoil Calculates the four corners of the coil rectangle for FEMM as
 % well as the number of turns and length of wire
 % INPUTS:
 %       h0 = h0 [mm]
-%       r2 = r2 [mm]
+%       r1 = r1 [mm]
 %       q = q [mm]
 % varargin = {2} diameter of magnet wire [mm]
 % OUTPUT:
@@ -43,16 +43,16 @@ else
 end
 
 coilPts = [
-           r2, -boxH/2;
-    r2 + boxW, -boxH/2;
-    r2 + boxW,  boxH/2;
-           r2,  boxH/2];
+           r1, -boxH/2;
+    r1 + boxW, -boxH/2;
+    r1 + boxW,  boxH/2;
+           r1,  boxH/2];
 
 if nargout == 4
     varargout{1} = 1e-3*[boxW,boxH];
 end
 
-r = r2 + d/2;
+r = r1 + d/2;
 lenWire = 2*pi*r*n;
 
 for i = 2:m

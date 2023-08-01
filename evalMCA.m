@@ -26,11 +26,11 @@ muMR = mu0*murMR;
 
 % Extract parameters
 h0 = h(:,1); h1 = h(:,2); h2 = h(:,3);
-r0 = r(:,1); r1 = r(:,2); r2 = r(:,3); 
+r0 = r(:,1); r1 = r(:,2); %r2 = r(:,3); 
 r3 = r(:,4); r4 = r(:,5); r5 = r(:,6); r6 = r(:,7);
 
 % Calculate Coil Geometry (input is in millimeters)
-[~,Nturns,lc,RZ] = calcCoil(h0*1e3,r2*1e3,q*1e3);
+[~,Nturns,lc,RZ] = calcCoil(h0*1e3,r1*1e3,q*1e3);
 
 % Calculate Coil Resistance and Voltage drop
 Rc = Rperm*lc;
