@@ -67,9 +67,9 @@ Pc = Vc.*Ic;
 % Wasted Volume
 Vwaste = 2*pi*(r4-q/2) .* (r4-r2).*h0;
 
-F(1) = massSpool + massTube + penaltyTerm;
+F(1) = massSpool + penaltyTerm;
 F(2) = Pc + penaltyTerm;
-F(3) = Vwaste + penaltyTerm;
+F(3) = -Fmax + penaltyTerm;
 
 if nargout > 1
     calcParams = [B,Fmin,Fmax,tauLR,Vc];

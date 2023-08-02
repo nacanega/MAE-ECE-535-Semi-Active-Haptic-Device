@@ -1,11 +1,13 @@
-function [H,HR,HZ,varargout] = biotRingH(J,RC,LC,TC)
+function [B,BR,BZ,varargout] = biotRingH(J,RC,LC,TC,varargin)
 %biotRingH takes in the current density and coil dimensions and returns the
 % estimated axial field intensity at the middle of the ring
 % INPUTS:
-%     J = Coil Current Density [A/m]
-%    RC = Coil Inner Radius (core radius) [m]
-%    LC = Coil Length (along z) [m]
-%    TC = Coil Thickness (along radius) [m]
+%        J = Coil Current Density [A/m^2]
+%       RC = Coil Inner Radius (core radius) [m]
+%       LC = Coil Length (along z) [m]
+%       TC = Coil Thickness (along radius) [m]
+% varargin = {1} deltaRZ the step size 
+%            {2} relative permeability of core (otherwise assumes air)
 % OUTPUT:
 %         H = Field intensity at center of coil
 %        HR = Average field intensity along radius
@@ -16,9 +18,16 @@ function [H,HR,HZ,varargout] = biotRingH(J,RC,LC,TC)
 %             {3} HavgZ = All evaluated field intensities along Z at R = 0
 %             {4} Coordinates and Havg along axis in 3D array
 %             {5} Coordinates and Havg along upper half in 3D array
-M = ceil(TC/2.54e-4);
-N = ceil(LC/2.54e-4);
-O = ceil(RC/2.54e-4);
+mu0 = 4e-7*pi;
+
+if nargin == 5
+    deltaRZ = varargin{1}; % for best performance, make at least twice the wire diameter
+else
+    deltaRZ = 1e-3; %1 mm increment size
+end
+M = ceil(TC/deltaRZ);
+N = ceil(LC/deltaRZ);
+O = ceil(RC/deltaRZ);
 
 RcoilSteps = linspace(RC,RC+TC,M+1);
 RcoilSteps = 0.5*(RcoilSteps(2:end) + RcoilSteps(1:end-1));
@@ -36,14 +45,21 @@ dZ = (LC)/(N);
 dAcoil = dRcoil*dZ;
 %dAcore = dRcore*dZ;
 
-Hfun = @(theta,Rc,Rp,Zp) ...
-    ((J.*Rc) ./ (4*pi)) .* (Rc - Rp.*cos(theta)) ...
-    ./ ((Zp.^2 + Rc.^2 + Rp.^2 - 2.*Rc.*Rp.*cos(theta)).^(1.5));
+if nargin == 6
+    mur = varargin{2};
+    Bfun = @(theta,Rc,Rp,Zc,Zp) ...
+    ((J.*Rc*mu0*mur) ./ (4*pi)) .* (Rc - Rp.*cos(theta)) ...
+    ./ (((Zp-Zc).^2 + Rc.^2 + Rp.^2 - 2.*Rc.*Rp.*cos(theta)).^(1.5));
+else
+    Bfun = @(theta,Rc,Rp,Zc,Zp) ...
+    ((J.*Rc*mu0) ./ (4*pi)) .* (Rc - Rp.*cos(theta)) ...
+    ./ (((Zp-Zc).^2 + Rc.^2 + Rp.^2 - 2.*Rc.*Rp.*cos(theta)).^(1.5));
+end
 
 % Point
 Pr = 0; % Center of coil
-Hfun1 = @(theta) Hfun(theta,coilR,Pr,coilZ-LC/2);
-H = sum(integral(Hfun1,0,2*pi,"ArrayValued",true),"all")*dAcoil;
+Bfun1 = @(theta) Bfun(theta,coilR,Pr,coilZ,LC/2);
+B = sum(integral(Bfun1,0,2*pi,"ArrayValued",true),"all")*dAcoil;
 
 % for Pz = ZSteps - LC/2
 %     for Rc = RcoilSteps
@@ -55,10 +71,10 @@ H = sum(integral(Hfun1,0,2*pi,"ArrayValued",true),"all")*dAcoil;
 
 if nargout > 1
     % Along Z
-    HavgZ = zeros(1,N);
+    BavgZ = zeros(1,N);
     for i = 1:N
-        Hfun2 = @(theta) Hfun(theta,coilR,Pr,coilZ-ZSteps(i));
-        HavgZ(i) = sum(integral(Hfun2,0,2*pi,"ArrayValued",true),"all")*dAcoil;
+        Hfun2 = @(theta) Bfun(theta,coilR,Pr,coilZ,ZSteps(i));
+        BavgZ(i) = sum(integral(Hfun2,0,2*pi,"ArrayValued",true),"all")*dAcoil;
         %     for Pz = ZSteps - ZSteps(i)
         %         for Rc = RcoilSteps
         %             Hfun1 = @(theta) Hfun(theta,Rc,Pr,Pz);
@@ -67,16 +83,16 @@ if nargout > 1
         %         end
         %     end
     end
-    HZ = mean(HavgZ);
+    BZ = mean(BavgZ);
 end
 
 if nargout > 2
     % Along R
     Pr = RcoreSteps;
-    HavgR = zeros(1,O);
+    BavgR = zeros(1,O);
     for i = 1:O
-        Hfun3 = @(theta) Hfun(theta,coilR,Pr(i),coilZ-LC/2);
-        HavgR(i) = sum(integral(Hfun3,0,2*pi,"ArrayValued",true),"all")*dAcoil;
+        Bfun3 = @(theta) Bfun(theta,coilR,Pr(i),coilZ,LC/2);
+        BavgR(i) = sum(integral(Bfun3,0,2*pi,"ArrayValued",true),"all")*dAcoil;
         %     for Pz = ZSteps-LC/2
         %         for Rc = RcoilSteps
         %             Hfun1 = @(theta) Hfun(theta,Rc,Pr(i),Pz);
@@ -85,17 +101,17 @@ if nargout > 2
         %         end
         %     end
     end
-    HR = mean(HavgR);
+    BR = mean(BavgR);
 end
 
 if nargout > 3
     % All
     [coreZ,coreR] = meshgrid(ZSteps,RcoreSteps);
-    Havg = zeros(O,N);
+    Bavg = zeros(O,N);
     for i = 1:O
         for j = 1:N
-            Hfun4 = @(theta) Hfun(theta,coilR,Pr(i),coilZ-ZSteps(j));
-            Havg(i,j) = sum(integral(Hfun4,0,2*pi,"ArrayValued",true),"all")*dAcoil;
+            Bfun4 = @(theta) Bfun(theta,coilR,Pr(i),coilZ,ZSteps(j));
+            Bavg(i,j) = sum(integral(Bfun4,0,2*pi,"ArrayValued",true),"all")*dAcoil;
             %         for Pz = ZSteps - ZSteps(j)
             %             for Rc = RcoilSteps
             %                 Hfun1 = @(theta) Hfun(theta,Rc,Pr(i),Pz);
@@ -104,16 +120,19 @@ if nargout > 3
             %             end
             %         end
         end
-        varargout{1} = mean(Havg,"all");
+        varargout{1} = mean(Bavg,"all");
     end
 end
 
 if nargout > 4
-    varargout{2} = HavgR;
+    varargout{2} = BavgR;
     if nargout > 5
-        varargout{3} = cat(3,ZSteps,zeros(size(ZSteps)),HavgZ);
+        varargout{3} = BavgZ;
         if nargout > 6
-            varargout{4} = cat(3,coreZ,coreR,Havg);
+            varargout{4} = cat(3,ZSteps,zeros(size(ZSteps)),BavgZ);
+            if nargout > 7
+                varargout{5} = cat(3,coreZ,coreR,Bavg);
+            end
         end
     end
 end

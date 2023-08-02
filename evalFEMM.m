@@ -68,6 +68,7 @@ spool = [spool; [1 -1].*flipud(spool(1:end-1,:))];
 
 % Open FEMM
 openfemm(hideWindow)
+
 if ~hideWindow
     main_maximize();
 end
@@ -75,11 +76,11 @@ end
 % Create New Document
 newdocument(0);
 
-counter = 0;
-s = sprintf('tempAnalysis%d.FEM',counter);
+fileNum = 0;
+s = sprintf('tempAnalysis%d.FEM',fileNum);
 while isfile(s)
-    counter = randi(1000);
-    s = sprintf('tempAnalysis%d.FEM',counter);
+    fileNum = randi(1000);
+    s = sprintf('tempAnalysis%d.FEM',fileNum);
 end
 
 % Temporarily save
@@ -94,11 +95,20 @@ mi_getmaterial('Air');
 
 mi_getmaterial('Pure Iron');
 mi_modifymaterial('Pure Iron',0,'Iron Spool');
+% mi_clearbhpoints('Iron Spool');
+% mi_modifymaterial('Iron Spool',1,5000);
+% mi_modifymaterial('Iron Spool',2,5000);
 
 mi_getmaterial('Pure Iron');
 mi_modifymaterial('Pure Iron',0,'Iron Tube');
+% mi_clearbhpoints('Iron Tube');
+% mi_modifymaterial('Iron Tube',1,5000);
+% mi_modifymaterial('Iron Tube',2,5000);
 
 mi_getmaterial('MRX-336AG');
+% mi_clearbhpoints('MRX-336AG');
+% mi_modifymaterial('MRX-336AG',1,5);
+% mi_modifymaterial('MRX-336AG',2,5);
 
 mi_getmaterial('30 AWG');
 mi_modifymaterial('30 AWG',0,'30 AWG Coil');
@@ -151,7 +161,7 @@ end
 mi_addsegment(coil(end,1),coil(end,2),coil(1,1),coil(1,2));
 mi_addblocklabel(mean(coil(:,1)),0);
 mi_selectlabel(mean(coil(:,1)),0);
-mi_setblockprop('30 AWG Coil',1,0,'Coil',0,0,-Nturns)
+mi_setblockprop('30 AWG Coil',1,0,'Coil',0,0,Nturns)
 mi_clearselected();
 
 % Add air
@@ -167,9 +177,9 @@ mi_makeABC(7,max(3*(h0+2*h2),1.5*r6),0,0,0);
 mi_zoom(0,-h0-h2,2*r6,h0+h2)
 
 % Create Mesh
-fprintf('Started Creating Mesh for %s\n',s)
+%fprintf('Started Creating Mesh for %s\n',s)
 mi_createmesh();
-fprintf('Finished Creating Mesh for %s\n',s)
+%fprintf('Finished Creating Mesh for %s\n',s)
 
 % Perform Analysis
 mi_analyze();
@@ -219,8 +229,8 @@ if hideWindow
     mo_close();
     mi_close();
     delete(s);
-    delete(sprintf('tempAnalysis%d.ans',counter));
-    %closefemm();
+    delete(sprintf('tempAnalysis%d.ans',fileNum));
+    closefemm();
 end
 
 end
